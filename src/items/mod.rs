@@ -1,10 +1,12 @@
 mod action;
 mod application;
+mod calculator;
 mod submenu;
 mod window;
 
 pub use action::{ActionItem, ActionKind};
 pub use application::ApplicationItem;
+pub use calculator::CalculatorItem;
 pub use submenu::{SubmenuItem, SubmenuLayout};
 pub use window::WindowItem;
 
@@ -22,6 +24,8 @@ pub enum ListItem {
     Action(ActionItem),
     /// A submenu that opens a nested view
     Submenu(SubmenuItem),
+    /// A calculator result
+    Calculator(CalculatorItem),
 }
 
 impl ListItem {
@@ -32,6 +36,7 @@ impl ListItem {
             Self::Window(win) => &win.id,
             Self::Action(act) => &act.id,
             Self::Submenu(sub) => &sub.id,
+            Self::Calculator(calc) => &calc.id,
         }
     }
 
@@ -42,6 +47,7 @@ impl ListItem {
             Self::Window(win) => &win.title,
             Self::Action(act) => &act.name,
             Self::Submenu(sub) => &sub.name,
+            Self::Calculator(calc) => &calc.expression,
         }
     }
 
@@ -52,6 +58,7 @@ impl ListItem {
             Self::Window(win) => Some(&win.description),
             Self::Action(act) => act.description.as_deref(),
             Self::Submenu(sub) => sub.description.as_deref(),
+            Self::Calculator(calc) => Some(&calc.display_result),
         }
     }
 
@@ -60,8 +67,9 @@ impl ListItem {
         match self {
             Self::Application(app) => app.icon_path.as_ref(),
             Self::Window(win) => win.icon_path.as_ref(),
-            Self::Action(_) => None,  // Actions use icon names, not paths
-            Self::Submenu(_) => None, // Submenus use icon names, not paths
+            Self::Action(_) => None,     // Actions use icon names, not paths
+            Self::Submenu(_) => None,    // Submenus use icon names, not paths
+            Self::Calculator(_) => None, // Calculator uses custom icon
         }
     }
 
@@ -85,6 +93,11 @@ impl ListItem {
         matches!(self, Self::Action(_))
     }
 
+    /// Check if this item is a calculator result.
+    pub fn is_calculator(&self) -> bool {
+        matches!(self, Self::Calculator(_))
+    }
+
     /// Get the action label to display (e.g., "Open", "Switch", "Run").
     pub fn action_label(&self) -> &'static str {
         match self {
@@ -92,24 +105,27 @@ impl ListItem {
             Self::Window(_) => "Switch",
             Self::Action(_) => "Run",
             Self::Submenu(_) => "Open",
+            Self::Calculator(_) => "Copy",
         }
     }
 
     /// Get the sort priority for this item type.
     /// Lower values appear first in the list.
-    /// Windows (0) < Applications (1) < Actions (2) < Submenus (3)
+    /// Calculator (0) < Windows (1) < Applications (2) < Actions (3) < Submenus (4)
     pub fn sort_priority(&self) -> u8 {
         match self {
-            Self::Window(_) => 0,
-            Self::Application(_) => 1,
-            Self::Action(_) => 2,
-            Self::Submenu(_) => 3,
+            Self::Calculator(_) => 0,
+            Self::Window(_) => 1,
+            Self::Application(_) => 2,
+            Self::Action(_) => 3,
+            Self::Submenu(_) => 4,
         }
     }
 
     /// Get the section name for this item type.
     pub fn section_name(&self) -> &'static str {
         match self {
+            Self::Calculator(_) => "Calculator",
             Self::Window(_) => "Windows",
             Self::Application(_) => "Applications",
             Self::Action(_) => "Actions",
@@ -141,5 +157,11 @@ impl From<ActionItem> for ListItem {
 impl From<SubmenuItem> for ListItem {
     fn from(item: SubmenuItem) -> Self {
         Self::Submenu(item)
+    }
+}
+
+impl From<CalculatorItem> for ListItem {
+    fn from(item: CalculatorItem) -> Self {
+        Self::Calculator(item)
     }
 }

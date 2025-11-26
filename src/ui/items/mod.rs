@@ -1,9 +1,11 @@
 mod application;
 mod base;
+mod calculator;
 mod delegate;
 
 pub use application::render_application;
 pub use base::{item_container, render_action_indicator, render_icon, render_text_content};
+pub use calculator::render_calculator;
 pub use delegate::ItemListDelegate;
 
 use crate::items::ListItem;
@@ -17,6 +19,7 @@ pub fn render_item(item: &ListItem, selected: bool, row: usize) -> Stateful<Div>
         ListItem::Window(win) => render_window(win, selected, row),
         ListItem::Action(act) => render_action(act, selected, row),
         ListItem::Submenu(sub) => render_submenu(sub, selected, row),
+        ListItem::Calculator(calc) => render_calculator(calc, selected, row),
     }
 }
 

@@ -1,3 +1,4 @@
+use crate::calculator::copy_to_clipboard;
 use crate::compositor::Compositor;
 use crate::desktop::launch_application;
 use crate::items::ListItem;
@@ -69,6 +70,12 @@ impl LauncherView {
                     // Focus the window via compositor
                     if let Err(e) = compositor.focus_window(&win.address) {
                         tracing::warn!(%e, "Failed to focus window");
+                    }
+                }
+                ListItem::Calculator(calc) => {
+                    // Copy calculator result to clipboard
+                    if let Err(e) = copy_to_clipboard(calc.text_for_clipboard()) {
+                        tracing::warn!(%e, "Failed to copy to clipboard");
                     }
                 }
                 _ => {}
