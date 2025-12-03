@@ -70,7 +70,7 @@ fn render_submenu(sub: &crate::items::SubmenuItem, selected: bool, row: usize) -
 
     if selected {
         // Show arrow instead of "Open" to indicate submenu
-        item = item.child(render_action_indicator("->"));
+        item = item.child(render_action_indicator("→"));
     }
 
     item
