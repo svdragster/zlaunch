@@ -1,5 +1,6 @@
 //! AI response view for displaying streaming responses.
 
+use crate::ui::markdown::render_markdown;
 use crate::ui::theme::theme;
 use gpui::{Div, SharedString, div, prelude::*};
 use gpui_component::scroll::ScrollableElement;
@@ -115,22 +116,15 @@ impl AiResponseView {
                         .child(SharedString::from("Thinking...")),
                 )
         } else {
-            // Show response text with word wrap (scrollable)
-            let mut response_content = div()
-                .p_4()
-                .text_base()
-                .text_color(t.item_title_color)
-                .line_height(gpui::DefiniteLength::from(gpui::px(24.0)))
-                .child(SharedString::from(self.response.clone()));
+            // Show response text with markdown rendering (scrollable)
+            let mut response_text = self.response.clone();
 
+            // Add cursor if streaming
             if self.is_streaming {
-                response_content = response_content.child(
-                    div()
-                        .text_base()
-                        .text_color(t.item_description_color)
-                        .child(SharedString::from(" ▌")), // Cursor
-                );
+                response_text.push_str(" ▌");
             }
+
+            let response_content = div().w_full().p_4().child(render_markdown(&response_text));
 
             div()
                 .id("ai-response-scroll")

@@ -8,13 +8,14 @@ use super::{item_container, render_action_indicator, render_text_content};
 
 /// Render an AI item with brain icon and query.
 pub fn render_ai(item: &AiItem, selected: bool, row: usize) -> Stateful<Div> {
-    let mut container = item_container(row, selected)
-        .child(render_ai_icon())
-        .child(render_text_content(
-            &item.name,
-            Some(item.description()),
-            selected,
-        ));
+    let mut container =
+        item_container(row, selected)
+            .child(render_ai_icon())
+            .child(render_text_content(
+                &item.name,
+                Some(item.description()),
+                selected,
+            ));
 
     if selected {
         container = container.child(render_action_indicator("Ask"));

@@ -514,7 +514,10 @@ impl ItemListDelegate {
             SectionType::Search => calc_offset + ai_offset,
             SectionType::Windows => calc_offset + ai_offset + self.section_info.search_count,
             SectionType::Commands => {
-                calc_offset + ai_offset + self.section_info.search_count + self.section_info.window_count
+                calc_offset
+                    + ai_offset
+                    + self.section_info.search_count
+                    + self.section_info.window_count
             }
             SectionType::Applications => {
                 calc_offset
@@ -696,7 +699,11 @@ impl ListDelegate for ItemListDelegate {
         self.do_cancel();
     }
 
-    fn render_empty(&mut self, _window: &mut Window, _cx: &mut Context<'_, ListState<Self>>) -> impl IntoElement {
+    fn render_empty(
+        &mut self,
+        _window: &mut Window,
+        _cx: &mut Context<'_, ListState<Self>>,
+    ) -> impl IntoElement {
         let t = theme();
         div()
             .w_full()

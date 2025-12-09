@@ -211,7 +211,11 @@ impl ListDelegate for EmojiGridDelegate {
         self.do_back();
     }
 
-    fn render_empty(&mut self, _window: &mut Window, _cx: &mut Context<'_, ListState<Self>>) -> impl IntoElement {
+    fn render_empty(
+        &mut self,
+        _window: &mut Window,
+        _cx: &mut Context<'_, ListState<Self>>,
+    ) -> impl IntoElement {
         let t = theme();
         div()
             .w_full()

@@ -4,6 +4,7 @@ pub mod emoji;
 pub mod icon;
 pub mod items;
 pub mod launcher;
+pub mod markdown;
 pub mod theme;
 
 pub use ai::AiResponseView;

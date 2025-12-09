@@ -1,12 +1,12 @@
 //! Gemini API client for streaming AI responses.
 
 use anyhow::{Context, Result};
+use futures::Stream;
 use futures::stream::StreamExt;
 use llm::builder::{LLMBackend, LLMBuilder};
 use llm::chat::ChatMessage;
 use std::env;
 use std::pin::Pin;
-use futures::Stream;
 
 /// Gemini client for AI queries.
 pub struct GeminiClient {
@@ -17,7 +17,9 @@ impl GeminiClient {
     /// Create a new Gemini client.
     /// Returns None if GEMINI_API_KEY environment variable is not set.
     pub fn new() -> Option<Self> {
-        env::var("GEMINI_API_KEY").ok().map(|api_key| Self { api_key })
+        env::var("GEMINI_API_KEY")
+            .ok()
+            .map(|api_key| Self { api_key })
     }
 
     /// Check if the Gemini client is available (API key is set).
@@ -48,7 +50,8 @@ impl GeminiClient {
             .context("Failed to initiate streaming chat")?;
 
         // Convert LLMError to anyhow::Error
-        let result_stream = stream.map(|result| result.map_err(|e| anyhow::Error::msg(e.to_string())));
+        let result_stream =
+            stream.map(|result| result.map_err(|e| anyhow::Error::msg(e.to_string())));
 
         Ok(Box::pin(result_stream))
     }
