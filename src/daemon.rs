@@ -34,6 +34,13 @@ pub fn init_logging() {
 /// This is the main entry point when no subcommand is provided.
 pub fn run() -> Result<()> {
     init_logging();
+    info!(
+        version = env!("CARGO_PKG_VERSION"),
+        "Starting zlaunch daemon"
+    );
+
+    // Initialize config from file (single source of truth)
+    crate::config::init_config();
 
     // Capture the full session environment early, including from systemd user session.
     // This ensures launched applications get proper theming variables.
@@ -45,7 +52,6 @@ pub fn run() -> Result<()> {
 
     // Start clipboard monitor
     let _clipboard_monitor_handle = crate::clipboard::monitor::start_monitor();
-    info!("Started clipboard monitor");
 
     // Create unified event channel
     let (event_tx, event_rx) = create_daemon_channel();
@@ -208,25 +214,16 @@ pub fn run() -> Result<()> {
 
 /// Handle the SetTheme IPC command.
 fn handle_set_theme(name: &str) -> Result<(), String> {
-    // Try to load the theme
-    let theme =
-        crate::config::load_theme(name).ok_or_else(|| format!("Theme '{}' not found", name))?;
+    // Validate theme exists before updating config
+    crate::config::load_theme(name).ok_or_else(|| format!("Theme '{}' not found", name))?;
 
-    // Set the global theme (in-memory)
-    crate::ui::theme::set_theme(theme);
+    // Update config (persists to disk if config file exists)
+    crate::config::update_config(|config| {
+        config.theme = name.to_string();
+    });
 
-    // Only persist if config file exists
-    if crate::config::config_file_exists() {
-        if let Err(e) = crate::config::save_theme_to_config(name) {
-            tracing::warn!(%e, "Failed to save theme to config");
-            // Don't return error - theme is still applied in memory
-        }
-    } else {
-        tracing::info!(
-            "No config file exists, theme '{}' applied for session only",
-            name
-        );
-    }
+    // Sync the theme cache from the updated config
+    crate::ui::theme::sync_theme_from_config();
 
     Ok(())
 }

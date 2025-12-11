@@ -1,5 +1,6 @@
 use crate::desktop::entry::DesktopEntry;
 use crate::desktop::env::get_session_environment;
+use std::os::unix::process::CommandExt;
 use std::process::Command;
 
 pub fn launch_application(entry: &DesktopEntry) -> anyhow::Result<()> {
@@ -35,14 +36,23 @@ fn launch_detached(exec: &str) -> anyhow::Result<()> {
     let program = parts[0];
     let args = &parts[1..];
 
-    Command::new(program)
-        .args(args)
-        .env_clear()
-        .envs(get_session_environment().iter())
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()?;
+    // SAFETY: setsid() is async-signal-safe and creates a new session,
+    // detaching the child from the parent's process group so it survives
+    // when the daemon exits.
+    unsafe {
+        Command::new(program)
+            .args(args)
+            .env_clear()
+            .envs(get_session_environment().iter())
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .pre_exec(|| {
+                libc::setsid();
+                Ok(())
+            })
+            .spawn()?;
+    }
 
     Ok(())
 }
@@ -50,15 +60,24 @@ fn launch_detached(exec: &str) -> anyhow::Result<()> {
 fn launch_in_terminal(exec: &str) -> anyhow::Result<()> {
     let terminal = get_terminal()?;
 
-    Command::new(&terminal)
-        .arg("-e")
-        .arg(exec)
-        .env_clear()
-        .envs(get_session_environment().iter())
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()?;
+    // SAFETY: setsid() is async-signal-safe and creates a new session,
+    // detaching the child from the parent's process group so it survives
+    // when the daemon exits.
+    unsafe {
+        Command::new(&terminal)
+            .arg("-e")
+            .arg(exec)
+            .env_clear()
+            .envs(get_session_environment().iter())
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .pre_exec(|| {
+                libc::setsid();
+                Ok(())
+            })
+            .spawn()?;
+    }
 
     Ok(())
 }

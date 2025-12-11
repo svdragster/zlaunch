@@ -1,7 +1,7 @@
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::sync::OnceLock;
+use std::sync::RwLock;
 
 use crate::items::ThemeSource;
 use crate::ui::theme::LauncherTheme;
@@ -12,8 +12,8 @@ use crate::ui::theme::LauncherTheme;
 #[include = "*.toml"]
 struct BundledThemes;
 
-/// Global config instance
-static CONFIG: OnceLock<AppConfig> = OnceLock::new();
+/// Global config instance (mutable via RwLock)
+static CONFIG: RwLock<AppConfig> = RwLock::new(AppConfig::default_const());
 
 /// Application configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,6 +25,17 @@ pub struct AppConfig {
     pub window_width: f32,
     /// Window height in pixels
     pub window_height: f32,
+}
+
+impl AppConfig {
+    /// Const default for static initialization
+    const fn default_const() -> Self {
+        Self {
+            theme: String::new(),
+            window_width: 600.0,
+            window_height: 400.0,
+        }
+    }
 }
 
 impl Default for AppConfig {
@@ -184,10 +195,8 @@ pub fn list_themes() -> Vec<String> {
 
 /// Load the configured theme, falling back to default if anything fails
 pub fn load_configured_theme() -> LauncherTheme {
-    // Try to load app config
-    let theme_name = load_app_config()
-        .map(|config| config.theme)
-        .unwrap_or_else(|| "default".to_string());
+    // Get theme name from cached config
+    let theme_name = config().theme;
 
     // If a non-default theme is requested, try to load it
     if theme_name != "default" {
@@ -204,9 +213,40 @@ pub fn load_configured_theme() -> LauncherTheme {
     LauncherTheme::default()
 }
 
-/// Get the global app config (cached)
-pub fn config() -> &'static AppConfig {
-    CONFIG.get_or_init(|| load_app_config().unwrap_or_default())
+/// Initialize config from file (call once at daemon startup)
+pub fn init_config() {
+    let loaded = load_app_config().unwrap_or_default();
+    let mut config = CONFIG.write().unwrap();
+    *config = loaded;
+}
+
+/// Get a clone of the current config
+pub fn config() -> AppConfig {
+    CONFIG.read().unwrap().clone()
+}
+
+/// Update config in memory and persist to disk if config file exists
+pub fn update_config(f: impl FnOnce(&mut AppConfig)) {
+    let mut config = CONFIG.write().unwrap();
+    f(&mut config);
+
+    // Only save if config file already exists
+    if config_file_exists() {
+        if let Err(e) = save_config_to_file(&config) {
+            tracing::warn!("Failed to save config: {}", e);
+        }
+    }
+}
+
+/// Save config to file
+fn save_config_to_file(config: &AppConfig) -> anyhow::Result<()> {
+    let config_path = config_dir()
+        .ok_or_else(|| anyhow::anyhow!("No config dir"))?
+        .join("config.toml");
+    let content = toml::to_string_pretty(config)?;
+    std::fs::write(&config_path, content)?;
+    tracing::debug!("Saved config to {:?}", config_path);
+    Ok(())
 }
 
 /// Get the configured window width
@@ -253,38 +293,4 @@ pub fn list_all_themes_with_source() -> Vec<(String, ThemeSource)> {
 
     themes.sort_by(|a, b| a.0.cmp(&b.0));
     themes
-}
-
-/// Save theme name to the config file
-/// Creates the config file if it doesn't exist
-/// Returns an error if saving fails
-pub fn save_theme_to_config(theme_name: &str) -> anyhow::Result<()> {
-    // Get or create config directory
-    let config_dir =
-        config_dir().ok_or_else(|| anyhow::anyhow!("Failed to get config directory"))?;
-    if !config_dir.exists() {
-        std::fs::create_dir_all(&config_dir)?;
-    }
-
-    let config_path = config_dir.join("config.toml");
-
-    // Load existing config or create new one
-    let mut config = load_app_config().unwrap_or_default();
-
-    // Update theme
-    config.theme = theme_name.to_string();
-
-    // Serialize to TOML
-    let toml_content = toml::to_string_pretty(&config)?;
-
-    // Write to file
-    std::fs::write(&config_path, toml_content)?;
-
-    tracing::info!(
-        "Saved theme '{}' to config file at {:?}",
-        theme_name,
-        config_path
-    );
-
-    Ok(())
 }

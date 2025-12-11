@@ -1,3 +1,5 @@
+use std::os::unix::process::CommandExt;
+
 use crate::assets::PhosphorIcon;
 use crate::search::SearchProvider;
 
@@ -63,10 +65,20 @@ impl IconProvider for SearchItem {
 
 impl Executable for SearchItem {
     fn execute(&self) -> anyhow::Result<()> {
-        // Open URL in browser
-        std::process::Command::new("xdg-open")
-            .arg(&self.url)
-            .spawn()?;
+        // Open URL in browser, disowned from daemon
+        // SAFETY: setsid() is async-signal-safe
+        unsafe {
+            std::process::Command::new("xdg-open")
+                .arg(&self.url)
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .pre_exec(|| {
+                    libc::setsid();
+                    Ok(())
+                })
+                .spawn()?;
+        }
         Ok(())
     }
 }

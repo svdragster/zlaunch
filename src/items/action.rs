@@ -1,3 +1,4 @@
+use std::os::unix::process::CommandExt;
 use std::process::Command;
 
 use super::traits::{Categorizable, DisplayItem, Executable, IconProvider};
@@ -136,7 +137,20 @@ impl Executable for ActionItem {
                     .spawn()?;
             }
             ActionKind::Command(cmd) => {
-                Command::new("sh").args(["-c", cmd]).spawn()?;
+                // Custom commands should be disowned from daemon
+                // SAFETY: setsid() is async-signal-safe
+                unsafe {
+                    Command::new("sh")
+                        .args(["-c", cmd])
+                        .stdin(std::process::Stdio::null())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
+                        .pre_exec(|| {
+                            libc::setsid();
+                            Ok(())
+                        })
+                        .spawn()?;
+                }
             }
         }
         Ok(())

@@ -601,11 +601,11 @@ impl LauncherTheme {
     }
 }
 
-/// Global theme instance.
+/// Global theme instance (cached for performance, synced from config).
 static THEME: std::sync::RwLock<Option<LauncherTheme>> = std::sync::RwLock::new(None);
 
 /// Get the global launcher theme.
-/// Loads the theme from configuration on first access, falling back to default if not configured.
+/// Returns the cached theme, or loads from config on first access.
 pub fn theme() -> LauncherTheme {
     let read_lock = THEME.read().unwrap();
     if let Some(theme) = read_lock.as_ref() {
@@ -613,15 +613,24 @@ pub fn theme() -> LauncherTheme {
     }
     drop(read_lock);
 
-    // Initialize theme if not yet loaded
+    // Initialize theme from config
     let loaded_theme = crate::config::load_configured_theme();
     let mut write_lock = THEME.write().unwrap();
     *write_lock = Some(loaded_theme.clone());
     loaded_theme
 }
 
-/// Update the global theme (used for live preview)
+/// Update the global theme (used for live preview during theme picker).
+/// This does NOT persist to config - use config::update_config() for that.
 pub fn set_theme(new_theme: LauncherTheme) {
     let mut write_lock = THEME.write().unwrap();
     *write_lock = Some(new_theme);
+}
+
+/// Sync the theme cache from config.
+/// Call this after updating config.theme to refresh the cached theme.
+pub fn sync_theme_from_config() {
+    let loaded_theme = crate::config::load_configured_theme();
+    let mut write_lock = THEME.write().unwrap();
+    *write_lock = Some(loaded_theme);
 }
