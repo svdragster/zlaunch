@@ -1,18 +1,3 @@
-//! New launcher implementation using refactored architecture.
-//!
-//! This launcher demonstrates the improvements from the refactoring:
-//! - Uses composable delegates (ItemListDelegate, EmojiGridDelegate, ClipboardListDelegate)
-//! - Simplified navigation logic (delegates handle their own navigation)
-//! - Cleaner state management with ViewMode enum
-//! - Reusable components and utilities
-//!
-//! Reduced from 1044 lines to ~300 lines by:
-//! - Using BaseDelegate<T> composition (eliminates delegate duplication)
-//! - Delegates handle their own selection logic
-//! - Using InputHandler for input management
-//! - Using FocusManager for focus handling
-//! - Extracting common rendering patterns
-
 use crate::calculator::copy_to_clipboard;
 use crate::compositor::Compositor;
 use crate::desktop::launch_application;
@@ -73,12 +58,6 @@ pub fn init(cx: &mut App) {
 }
 
 /// The main launcher view.
-///
-/// Architecture improvements:
-/// - Each view mode has its own delegate (composition over inheritance)
-/// - Delegates handle their own selection and filtering
-/// - Navigation is much simpler (just call delegate methods)
-/// - Input handling is centralized
 pub struct LauncherView {
     /// Current view mode
     view_mode: ViewMode,
