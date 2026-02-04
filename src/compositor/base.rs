@@ -103,6 +103,7 @@ mod tests {
                 class: "firefox".to_string(),
                 workspace: 1,
                 focused: false,
+                icon_data: None,
             },
             WindowInfo {
                 address: "2".to_string(),
@@ -110,6 +111,7 @@ mod tests {
                 class: "zlaunch".to_string(),
                 workspace: 1,
                 focused: true,
+                icon_data: None,
             },
         ];
 

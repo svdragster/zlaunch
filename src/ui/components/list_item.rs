@@ -1,6 +1,7 @@
 use crate::ui::theme::theme;
 use gpui::{Div, ElementId, SharedString, Stateful, div, img, prelude::*, px};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 /// A standard list item component with icon, title, description, and action indicator.
 ///
@@ -29,10 +30,20 @@ pub struct ListItemComponent {
 pub enum Icon {
     /// Path to an image file
     Path(PathBuf),
+    /// In-memory PNG image data
+    Data(Arc<gpui::Image>),
     /// Named Phosphor icon
     Named(String),
     /// Custom placeholder text
     Placeholder(String),
+}
+
+impl Icon {
+    /// Create an icon from PNG bytes
+    pub fn from_png_bytes(bytes: Vec<u8>) -> Self {
+        let image = Arc::new(gpui::Image::from_bytes(gpui::ImageFormat::Png, bytes));
+        Icon::Data(image)
+    }
 }
 
 impl ListItemComponent {
@@ -153,6 +164,9 @@ fn render_icon_element(icon: Icon) -> Div {
             } else {
                 render_placeholder_icon(icon_container, "?")
             }
+        }
+        Icon::Data(image) => {
+            icon_container.child(img(image).w(size).h(size).rounded_sm())
         }
         Icon::Named(_name) => {
             // For named icons, we'd typically use an icon library

@@ -31,6 +31,8 @@ pub struct WindowInfo {
     pub workspace: i32,
     /// Whether this window is currently focused
     pub focused: bool,
+    /// Optional icon as PNG bytes (used when compositor provides icon data directly)
+    pub icon_data: Option<Vec<u8>>,
 }
 
 /// Trait for compositor window management operations.

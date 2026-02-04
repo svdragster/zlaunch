@@ -70,6 +70,7 @@ impl Compositor for NiriCompositor {
                 class: window.app_id,
                 workspace: window.workspace_id as i32,
                 focused: window.is_focused,
+                icon_data: None,
             });
         }
 

@@ -82,6 +82,7 @@ impl Compositor for HyprlandCompositor {
                     class: c.class,
                     workspace,
                     focused,
+                    icon_data: None,
                 }
             })
             .collect();

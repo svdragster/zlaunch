@@ -6,8 +6,9 @@
 use crate::assets::PhosphorIcon;
 use crate::items::{DisplayItem, IconProvider, ListItem};
 use crate::ui::theme::theme;
-use gpui::{Div, ElementId, SharedString, Stateful, div, img, prelude::*, px, svg};
+use gpui::{Div, ElementId, ImageFormat, SharedString, Stateful, div, img, prelude::*, px, svg};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 /// Render any list item based on its type.
 /// This is the main dispatch function for item rendering.
@@ -47,8 +48,15 @@ fn render_application(
 
 /// Render a window item.
 fn render_window(win: &crate::items::WindowItem, selected: bool, row: usize) -> Stateful<Div> {
+    // Use in-memory icon data if available, otherwise fall back to icon path
+    let icon = if let Some(ref data) = win.icon_data {
+        render_icon_from_data(data)
+    } else {
+        render_icon(win.icon_path.as_ref())
+    };
+
     let mut item = item_container(row, selected)
-        .child(render_icon(win.icon_path.as_ref()))
+        .child(icon)
         .child(render_text_content(
             &win.title,
             Some(&win.description),
@@ -256,6 +264,23 @@ pub fn item_container(row: usize, selected: bool) -> Stateful<Div> {
         .flex_row()
         .items_center()
         .gap_2()
+}
+
+/// Render an icon from PNG bytes in memory.
+fn render_icon_from_data(data: &[u8]) -> Div {
+    let theme = theme();
+    let size = theme.icon_size;
+
+    let icon_container = div()
+        .w(size)
+        .h(size)
+        .flex_shrink_0()
+        .flex()
+        .items_center()
+        .justify_center();
+
+    let image = Arc::new(gpui::Image::from_bytes(ImageFormat::Png, data.to_vec()));
+    icon_container.child(img(image).w(size).h(size).rounded_sm())
 }
 
 /// Render an icon from a file path, with fallback placeholder.

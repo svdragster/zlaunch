@@ -147,16 +147,18 @@ pub fn close_window(handle: &WindowHandle<Root>, cx: &mut App) {
 /// Fetch open windows from the compositor and convert to WindowItems.
 fn fetch_windows(compositor: &dyn Compositor) -> Vec<WindowItem> {
     match compositor.list_windows() {
-        Ok(windows) => {
-            windows
-                .into_iter()
-                .map(|info| {
-                    // Try to resolve icon from app class
-                    let icon_path = resolve_window_icon(&info.class);
-                    WindowItem::from_window_info(info, icon_path)
-                })
-                .collect()
-        }
+        Ok(windows) => windows
+            .into_iter()
+            .map(|info| {
+                // Only resolve icon from class if compositor didn't provide icon data
+                let icon_path = if info.icon_data.is_some() {
+                    None
+                } else {
+                    resolve_window_icon(&info.class)
+                };
+                WindowItem::from_window_info(info, icon_path)
+            })
+            .collect(),
         Err(e) => {
             warn!(%e, "Failed to list windows");
             Vec::new()

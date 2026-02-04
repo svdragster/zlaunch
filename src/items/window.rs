@@ -17,8 +17,10 @@ pub struct WindowItem {
     pub app_name: String,
     /// Pre-computed description (e.g., "Firefox - Workspace 2")
     pub description: String,
-    /// Resolved icon path
+    /// Resolved icon path (from freedesktop icon lookup)
     pub icon_path: Option<PathBuf>,
+    /// Raw icon data as PNG bytes (from compositor)
+    pub icon_data: Option<Vec<u8>>,
     /// Workspace number
     pub workspace: i32,
     /// Whether this window is currently focused
@@ -37,6 +39,7 @@ impl WindowItem {
         app_id: String,
         app_name: String,
         icon_path: Option<PathBuf>,
+        icon_data: Option<Vec<u8>>,
         workspace: i32,
         focused: bool,
     ) -> Self {
@@ -49,6 +52,7 @@ impl WindowItem {
             app_name,
             description,
             icon_path,
+            icon_data,
             workspace,
             focused,
         }
@@ -66,6 +70,7 @@ impl WindowItem {
             app_name,
             description,
             icon_path,
+            icon_data: info.icon_data,
             workspace: info.workspace,
             focused: info.focused,
         }
