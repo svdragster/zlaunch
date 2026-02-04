@@ -60,8 +60,9 @@ pub fn mock_window(title: &str, app_id: &str) -> WindowItem {
         title.to_string(),
         app_id.to_string(),
         app_id.to_string(), // app_name same as app_id for simplicity
-        None,
-        1, // workspace
+        None,               // icon_path
+        None,               // icon_data
+        1,                  // workspace
         false,
     )
 }
